@@ -2379,6 +2379,11 @@ static int lock_page_maybe_drop_mmap(struct vm_fault *vmf, struct page *page,
 	return 1;
 }
 
+#if CONFIG_MMAP_READAROUND_LIMIT == 0
+int mmap_readaround_limit = (VM_MAX_READAHEAD / 4); 		/* page */
+#else
+int mmap_readaround_limit = CONFIG_MMAP_READAROUND_LIMIT; 	/* page */
+#endif
 
 /*
  * Synchronous readahead happens when we don't even find a page in the page
@@ -2394,6 +2399,7 @@ static struct file *do_sync_mmap_readahead(struct vm_fault *vmf)
 	struct address_space *mapping = file->f_mapping;
 	struct file *fpin = NULL;
 	pgoff_t offset = vmf->pgoff;
+	unsigned int ra_pages;
 
 	/* If we don't want any read-ahead, don't bother */
 	if (vmf->vma->vm_flags & VM_RAND_READ)
@@ -2422,10 +2428,11 @@ static struct file *do_sync_mmap_readahead(struct vm_fault *vmf)
 	/*
 	 * mmap read-around
 	 */
+	ra_pages = min_t(unsigned int, ra->ra_pages, mmap_readaround_limit);
 	fpin = maybe_unlock_mmap_for_io(vmf, fpin);
-	ra->start = max_t(long, 0, offset - ra->ra_pages / 2);
-	ra->size = ra->ra_pages;
-	ra->async_size = ra->ra_pages / 4;
+	ra->start = max_t(long, 0, offset - ra_pages / 2);
+	ra->size = ra_pages;
+	ra->async_size = ra_pages / 4;
 	ra_submit(ra, mapping, file);
 	return fpin;
 }
@@ -2509,7 +2516,11 @@ int filemap_fault(struct vm_fault *vmf)
 		fpin = do_async_mmap_readahead(vmf, page);
 	} else if (!page) {
 		/* No page in the page cache at all */
+#ifdef CONFIG_MTK_MLOG
+		current->fm_flt++;
+#endif
 		count_vm_event(PGMAJFAULT);
+		count_vm_event(PGFMFAULT);
 		count_memcg_event_mm(vmf->vma->vm_mm, PGMAJFAULT);
 		ret = VM_FAULT_MAJOR;
 		fpin = do_sync_mmap_readahead(vmf);

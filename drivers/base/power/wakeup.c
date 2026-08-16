@@ -20,6 +20,10 @@
 
 #include "power.h"
 
+#ifdef CONFIG_SEC_PM
+#include <linux/wakeup_reason.h>
+#endif
+
 /*
  * If set, the suspend/hibernate code will abort transitions to a sleep state
  * if wakeup events are registered during or immediately before the transition.
@@ -922,6 +926,9 @@ void pm_wakeup_clear(bool reset)
 void pm_system_irq_wakeup(unsigned int irq_number)
 {
 	if (pm_wakeup_irq == 0) {
+#ifdef CONFIG_SEC_PM
+		log_wakeup_reason(irq_number);
+#endif
 		pm_wakeup_irq = irq_number;
 		pm_system_wakeup();
 	}

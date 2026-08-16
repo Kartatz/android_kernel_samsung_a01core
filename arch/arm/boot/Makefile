@@ -36,7 +36,7 @@ DTB_LIST := $(addsuffix .dtb,$(DTB_NAMES))
 else
 DTB_LIST := $(dtb-y)
 endif
-DTB_OBJS := $(addprefix $(obj)/dts/,$(DTB_LIST))
+DTB_OBJS := $(addprefix $(obj)/dts/dts/,$(DTB_LIST))
 
 ifeq ($(CONFIG_XIP_KERNEL),y)
 
@@ -61,12 +61,15 @@ $(obj)/Image: vmlinux FORCE
 $(obj)/compressed/vmlinux: $(obj)/Image FORCE
 	$(Q)$(MAKE) $(build)=$(obj)/compressed $@
 
-$(obj)/zImage:	$(obj)/compressed/vmlinux FORCE
+$(obj)/zImage:	$(obj)/compressed/vmlinux $(obj)/mtk.dtb FORCE
 	$(call if_changed,objcopy)
 
 $(obj)/zImage-dtb:	$(obj)/zImage $(DTB_OBJS) FORCE
 	$(call if_changed,cat)
 	@echo '  Kernel: $@ is ready'
+
+$(obj)/mtk.dtb: $(DTB_OBJS) FORCE
+	$(call if_changed,cat)
 
 endif
 

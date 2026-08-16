@@ -196,6 +196,22 @@ config INPUT_KEYCOMBO
 	depends on INPUT
 	---help---
 	  Say Y here if you want to take action when some keys are pressed;
+	  
+config SEC_DEBUG_TSP_LOG
+	tristate "Support for tsp_msg"
+	default n
+
+config SEC_AUTO_INPUT
+	tristate "Samsung auto input"
+	depends on !SAMSUNG_PRODUCT_SHIP
+	default y
+	help
+	  Say Y here if you use auto input function.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called autoinput.
 
 comment "Input Device Drivers"
 
@@ -210,6 +226,8 @@ source "drivers/input/tablet/Kconfig"
 source "drivers/input/touchscreen/Kconfig"
 
 source "drivers/input/misc/Kconfig"
+
+source "drivers/input/fingerprint/Kconfig"
 
 source "drivers/input/rmi4/Kconfig"
 

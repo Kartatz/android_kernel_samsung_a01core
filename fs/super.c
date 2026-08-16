@@ -35,8 +35,11 @@
 #include <linux/fsnotify.h>
 #include <linux/lockdep.h>
 #include <linux/user_namespace.h>
+#include <linux/magic.h>
 #include "internal.h"
 
+/* @fs.sec -- 89e449513e5bea6196d9aaf62a6936ae -- */
+void (*ufs_debug_func)(void *) = NULL;
 
 static LIST_HEAD(super_blocks);
 static DEFINE_SPINLOCK(sb_lock);
@@ -858,6 +861,9 @@ int do_remount_sb2(struct vfsmount *mnt, struct super_block *sb, int sb_flags, v
 		if (force) {
 			sb->s_readonly_remount = 1;
 			smp_wmb();
+
+			if (sb->s_magic == F2FS_SUPER_MAGIC)
+				mnt = ERR_PTR(-EROFS);
 		} else {
 			retval = sb_prepare_remount_readonly(sb);
 			if (retval)

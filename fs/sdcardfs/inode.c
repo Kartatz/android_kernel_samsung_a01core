@@ -559,8 +559,10 @@ static int sdcardfs_permission(struct vfsmount *mnt, struct inode *inode, int ma
 	struct inode tmp;
 	struct sdcardfs_inode_data *top = top_data_get(SDCARDFS_I(inode));
 
-	if (IS_ERR(mnt))
+	if (IS_ERR(mnt)) {
+		data_put(top);
 		return PTR_ERR(mnt);
+	}
 
 	if (!top)
 		return -EINVAL;
@@ -780,6 +782,11 @@ static int sdcardfs_getattr(const struct path *path, struct kstat *stat,
 		goto out;
 	sdcardfs_copy_and_fix_attrs(d_inode(dentry),
 			      d_inode(lower_path.dentry));
+	if (sizeof(loff_t) > sizeof(long))
+		inode_lock(dentry->d_inode);
+	fsstack_copy_inode_size(dentry->d_inode, lower_path.dentry->d_inode);
+	if (sizeof(loff_t) > sizeof(long))
+		inode_unlock(dentry->d_inode);
 	err = sdcardfs_fillattr(mnt, d_inode(dentry), &lower_stat, stat);
 out:
 	sdcardfs_put_lower_path(dentry, &lower_path);
